@@ -6,6 +6,7 @@ requires:
 - protobuf
 - boost
 - glog
+- restbed
 - DDS
 build_requires:
 - CMake
