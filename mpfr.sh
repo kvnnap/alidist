@@ -8,6 +8,7 @@ build_requires:
 ---
 #!/bin/sh
 rsync -a --delete --exclude '**/.git' $SOURCEDIR/ ./
+perl -p -i -e 's/ doc / /' Makefile.am
 autoreconf -ivf
 
 ./configure --prefix=$INSTALLROOT    \
@@ -38,4 +39,5 @@ module load BASE/1.0
 # Our environment
 setenv MPFR_ROOT \$::env(BASEDIR)/$PKGNAME/\$version
 prepend-path LD_LIBRARY_PATH \$::env(MPFR_ROOT)/lib
+$([[ ${ARCHITECTURE:0:3} == osx ]] && echo "prepend-path DYLD_LIBRARY_PATH \$::env(MPFR_ROOT)/lib")
 EoF

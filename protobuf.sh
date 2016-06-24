@@ -1,9 +1,9 @@
 package: protobuf
-version: v2.5.0
+version: v2.6.1
 source: https://github.com/google/protobuf
 build_requires:
  - autotools
- - "GCC-Toolchain:(?!osx|slc5)"
+ - "GCC-Toolchain:(?!osx)"
 --- 
 
 rsync -av --delete --exclude="**/.git" $SOURCEDIR/ .
@@ -29,5 +29,6 @@ module load BASE/1.0
 # Our environment
 setenv PROTOBUF_ROOT \$::env(BASEDIR)/$PKGNAME/\$version
 prepend-path LD_LIBRARY_PATH \$::env(PROTOBUF_ROOT)/lib
+$([[ ${ARCHITECTURE:0:3} == osx ]] && echo "prepend-path DYLD_LIBRARY_PATH \$::env(PROTOBUF_ROOT)/lib")
 prepend-path PATH \$::env(PROTOBUF_ROOT)/bin
 EoF

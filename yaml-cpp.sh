@@ -17,15 +17,16 @@ case $ARCHITECTURE in
   *) ;;
 esac
 
-cmake $SOURCEDIR \
-  -DCMAKE_INSTALL_PREFIX:PATH="$INSTALLROOT" \
-  -DBUILD_SHARED_LIBS=YES \
-  ${BOOST_ROOT:+-DBOOST_ROOT:PATH="$BOOST_ROOT"} \
-  -DCMAKE_SKIP_RPATH=YES \
+cmake $SOURCEDIR                                         \
+  -DCMAKE_INSTALL_PREFIX:PATH="$INSTALLROOT"             \
+  -DBUILD_SHARED_LIBS=YES                                \
+  ${BOOST_ROOT:+-DBOOST_ROOT:PATH="$BOOST_ROOT"}         \
+  ${BOOST_ROOT:+-DBoost_DIR:PATH="$BOOST_ROOT"}          \
+  ${BOOST_ROOT:+-DBoost_INCLUDE_DIR:PATH="$BOOST_ROOT/include"}  \
+  -DCMAKE_SKIP_RPATH=YES                                 \
   -DSKIP_INSTALL_FILES=1
 
-make ${JOBS+-j $JOBS}
-make install
+make ${JOBS+-j $JOBS} install
 
 # Modulefile
 MODULEDIR="$INSTALLROOT/etc/modulefiles"
@@ -44,4 +45,5 @@ module load BASE/1.0 ${BOOST_ROOT:+boost/$BOOST_VERSION-$BOOST_REVISION}
 # Our environment
 setenv YAMLCPP \$::env(BASEDIR)/$PKGNAME/\$version
 prepend-path LD_LIBRARY_PATH \$::env(YAMLCPP)/lib
+$([[ ${ARCHITECTURE:0:3} == osx ]] && echo "prepend-path DYLD_LIBRARY_PATH \$::env(YAMLCPP)/lib")
 EoF

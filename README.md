@@ -1,6 +1,26 @@
 # alidist
 Recipes to build ALICE SW
 
+# Guidelines for commit messages
+
+- Keep the first line of the commit below 50 chars
+- Leave the second line empty
+- Try to keep the lines after the third below 72 chars
+- Use some imperative verb as first word of the first line
+- Do not end the first line with a full-stop (i. e. `.`)
+- Make sure you squash / cleanup your commits when it makes sense (e.g. if they are really one the fix of the other). Keep history clean.
+
+Example:
+
+```
+Fix issue in Geant4
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
+tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
+veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
+commodo consequat.
+```
+
 # Guidelines for contributing recipes
 
 - Keep things simple (but concise).
@@ -45,3 +65,31 @@ Whenever you need to build a new external, you should consider the following:
 
     and add your patches on such a branch.
   - Do not create extra branches unless you do need to patch the original sources.
+
+Moreover try to keep the package name (as specified inside the recipe
+in the `package` field of the header) and the repository name the same,
+including capitalization.
+
+# PWGMM owned packages
+
+The following packages have been agreed to be under PWGMM ownership and will require its signoff to be deployed in production.
+
+- aligenerators
+- crmc
+- epos
+- epos-test
+- hepmc
+- jewel
+- lhapdf
+- lhapdf5
+- powheg
+- pythia
+- pythia6
+- rivet
+- rivet-test
+- sherpa
+- thepeg
+- thepeg-test
+- yoda
+
+Plus any of their dependencies.

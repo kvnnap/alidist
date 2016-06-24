@@ -6,10 +6,18 @@ requires:
   - DDS
 source: https://github.com/AliceO2Group/AliceO2
 tag: dev
-incremental_recipe: make ${JOBS:+-j$JOBS} install
+incremental_recipe: |
+  make ${JOBS:+-j$JOBS} install
+  mkdir -p $INSTALLROOT/etc/modulefiles && rsync -a --delete etc/modulefiles/ $INSTALLROOT/etc/modulefiles
 ---
 #!/bin/sh
 export ROOTSYS=$ROOT_ROOT
+
+# Making sure people do not have SIMPATH set when they build fairroot.
+# Unfortunately SIMPATH seems to be hardcoded in a bunch of places in
+# fairroot, so this really should be cleaned up in FairRoot itself for
+# maximum safety.
+unset SIMPATH
 
 case $ARCHITECTURE in
   osx*)
@@ -38,3 +46,23 @@ if [[ $GIT_TAG == master ]]; then
   CONTINUE_ON_ERROR=true
 fi
 make ${CONTINUE_ON_ERROR+-k} ${JOBS+-j $JOBS} install
+
+# Modulefile
+mkdir -p etc/modulefiles
+cat > etc/modulefiles/$PKGNAME <<EoF
+#%Module1.0
+proc ModulesHelp { } {
+  global version
+  puts stderr "ALICE Modulefile for $PKGNAME $PKGVERSION-@@PKGREVISION@$PKGHASH@@"
+}
+set version $PKGVERSION-@@PKGREVISION@$PKGHASH@@
+module-whatis "ALICE Modulefile for $PKGNAME $PKGVERSION-@@PKGREVISION@$PKGHASH@@"
+# Dependencies
+module load BASE/1.0 FairRoot/$FAIRROOT_VERSION-$FAIRROOT_REVISION ${DDS_ROOT:+DDS/$DDS_VERSION-$DDS_REVISION} ${GCC_TOOLCHAIN_ROOT:+GCC-Toolchain/$GCC_TOOLCHAIN_VERSION-$GCC_TOOLCHAIN_REVISION}
+# Our environment
+setenv O2_ROOT \$::env(BASEDIR)/$PKGNAME/\$version
+prepend-path PATH \$::env(O2_ROOT)/bin
+prepend-path LD_LIBRARY_PATH \$::env(O2_ROOT)/lib
+$([[ ${ARCHITECTURE:0:3} == osx ]] && echo "prepend-path DYLD_LIBRARY_PATH \$::env(O2_ROOT)/lib")
+EoF
+mkdir -p $INSTALLROOT/etc/modulefiles && rsync -a --delete etc/modulefiles/ $INSTALLROOT/etc/modulefiles

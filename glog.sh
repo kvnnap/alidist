@@ -3,7 +3,7 @@ version: v0.3.4
 source: https://github.com/google/glog
 build_requires:
  - autotools
- - "GCC-Toolchain:(?!osx|slc5)"
+ - "GCC-Toolchain:(?!osx)"
 --- 
 rsync -av --delete --exclude="**/.git" $SOURCEDIR/ .
 autoreconf -ivf
@@ -28,5 +28,6 @@ module load BASE/1.0
 # Our environment
 setenv PROTOBUF_ROOT \$::env(BASEDIR)/$PKGNAME/\$version
 prepend-path LD_LIBRARY_PATH \$::env(PROTOBUF_ROOT)/lib
+$([[ ${ARCHITECTURE:0:3} == osx ]] && echo "prepend-path DYLD_LIBRARY_PATH \$::env(PROTOBUF_ROOT)/lib")
 prepend-path PATH \$::env(PROTOBUF_ROOT)/bin
 EoF

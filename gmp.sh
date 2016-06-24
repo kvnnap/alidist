@@ -3,7 +3,7 @@ version: v6.0.0
 source: https://github.com/alisw/GMP.git
 tag: v6.0.0
 requires:
- - "GCC-Toolchain:(?!osx|slc5)"
+ - "GCC-Toolchain:(?!osx)"
 ---
 #!/bin/sh
 case $ARCHITECTURE in
@@ -41,4 +41,5 @@ module load BASE/1.0 ${GCC_TOOLCHAIN_ROOT:+GCC-Toolchain/$GCC_TOOLCHAIN_VERSION-
 # Our environment
 setenv GMP_ROOT \$::env(BASEDIR)/$PKGNAME/\$version
 prepend-path LD_LIBRARY_PATH \$::env(GMP_ROOT)/lib
+$([[ ${ARCHITECTURE:0:3} == osx ]] && echo "prepend-path DYLD_LIBRARY_PATH \$::env(GMP_ROOT)/lib")
 EoF

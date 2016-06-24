@@ -3,7 +3,7 @@ version: v5.3.1
 source: https://github.com/cooperative-computing-lab/cctools
 tag: 18a15be6bbe1a60c9f89f8ff58530366c4bf6663
 requires:
- - "GCC-Toolchain:(?!osx|slc5)"
+ - "GCC-Toolchain:(?!osx)"
 build_requires:
  - zlib
  - SWIG
@@ -35,4 +35,5 @@ module load BASE/1.0 ${GCC_TOOLCHAIN_ROOT:+GCC-Toolchain/$GCC_TOOLCHAIN_VERSION-
 setenv CCTOOLS_ROOT \$::env(BASEDIR)/$PKGNAME/\$version
 prepend-path PATH \$::env(CCTOOLS_ROOT)/bin
 prepend-path LD_LIBRARY_PATH \$::env(CCTOOLS_ROOT)/lib
+$([[ ${ARCHITECTURE:0:3} == osx ]] && echo "prepend-path DYLD_LIBRARY_PATH \$::env(CCTOOLS_ROOT)/lib")
 EoF

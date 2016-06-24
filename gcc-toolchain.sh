@@ -1,7 +1,7 @@
 package: GCC-Toolchain
-version: "%(tag_basename)s%(defaults_upper)s"
+version: "%(tag_basename)s"
 source: https://github.com/alisw/gcc-toolchain
-tag: alice/v4.9.3
+tag: v4.9.3-alice2
 prepend_path:
   "LD_LIBRARY_PATH": "$GCC_TOOLCHAIN_ROOT/lib64"
   "DYLD_LIBRARY_PATH": "$GCC_TOOLCHAIN_ROOT/lib64"
@@ -9,16 +9,26 @@ build_requires:
  - autotools
 prefer_system: .*
 prefer_system_check: |
-  printf "#if ((__GNUC__ << 16)+(__GNUC_MINOR__ << 8)+(__GNUC_PATCHLEVEL__) < (0x040800))\n#error \"Cannot use system's GCC.\"\n#endif\n" | gcc -xc++ - -c -o /dev/null
+  which cc && test -f $(dirname $(which cc))/c++ && printf "#define GCCVER ((__GNUC__ << 16)+(__GNUC_MINOR__ << 8)+(__GNUC_PATCHLEVEL__))\n#if (GCCVER < 0x040800) || ((GCCVER >= 0x050000) && (GCCVER < 0x050300)) || (GCCVER >= 0x060000)\n#error \"System's GCC cannot be used: we need 4.8, 4.9 or 5.X (with the exception of 5.0 to 5.2). We are going to compile our own version.\"\n#endif\n" | cc -xc++ - -c -o /dev/null && which gfortran
 ---
 #!/bin/bash -e
 
-echo "Building ALICE GCC. You can skip this step by installing at least GCC 4.8 on your system."
+unset CXXFLAGS
+unset CFLAGS
+
+echo "Building GCC because no compatible version was found on the system. To skip this step, install GCC 4.8 or 4.9, or 5.X (with the exception of 5.0 to 5.2). Make sure you have gfortran installed too."
 
 USE_GOLD=
 case $ARCHITECTURE in
   osx*)
     EXTRA_LANGS=',objc,obj-c++'
+    MARCH=
+  ;;
+  *x86-64)
+    MARCH='x86_64-unknown-linux-gnu'
+  ;;
+  *)
+    MARCH=
   ;;
 esac
 
@@ -27,15 +37,16 @@ rsync -a --exclude='**/.git' --delete --delete-excluded "$SOURCEDIR/" ./
 # Binutils
 mkdir build-binutils
 pushd build-binutils
-  ../binutils/configure --prefix="$INSTALLROOT" \
-                        ${USE_GOLD:+--enable-gold=yes} \
-                        --enable-ld=default \
-                        --enable-lto \
-                        --enable-plugins \
-                        --enable-threads \
+  ../binutils/configure --prefix="$INSTALLROOT"                \
+                        ${MARCH:+--build=$MARCH --host=$MARCH} \
+                        ${USE_GOLD:+--enable-gold=yes}         \
+                        --enable-ld=default                    \
+                        --enable-lto                           \
+                        --enable-plugins                       \
+                        --enable-threads                       \
                         --disable-nls
-  make ${JOBS:+-j$JOBS}
-  make install
+  make ${JOBS:+-j$JOBS} MAKEINFO=":"
+  make install MAKEINFO=":"
   hash -r
 popd
 
@@ -57,15 +68,16 @@ popd
 
 mkdir build-gcc
 pushd build-gcc
-  ../gcc/configure --prefix="$INSTALLROOT" \
-               --enable-languages="c,c++,fortran${EXTRA_LANGS}" \
-               --disable-multilib \
-               ${USE_GOLD:+--enable-gold=yes} \
-               --enable-ld=default \
-               --enable-lto \
-               --disable-nls
-  make ${JOBS+-j $JOBS} bootstrap-lean
-  make install
+  ../gcc/configure --prefix="$INSTALLROOT"                          \
+                   ${MARCH:+--build=$MARCH --host=$MARCH}           \
+                   --enable-languages="c,c++,fortran${EXTRA_LANGS}" \
+                   --disable-multilib                               \
+                   ${USE_GOLD:+--enable-gold=yes}                   \
+                   --enable-ld=default                              \
+                   --enable-lto                                     \
+                   --disable-nls
+  make ${JOBS+-j $JOBS} bootstrap-lean MAKEINFO=":"
+  make install MAKEINFO=":"
   hash -r
 
   # GCC creates c++, but not cc
@@ -98,10 +110,11 @@ rm -f a.out
 # GDB
 mkdir build-gdb
 pushd build-gdb
-  ../gdb/configure --prefix="$INSTALLROOT" \
+  ../gdb/configure --prefix="$INSTALLROOT"                \
+                   ${MARCH:+--build=$MARCH --host=$MARCH} \
                    --disable-multilib
-  make ${JOBS:+-j$JOBS}
-  make install
+  make ${JOBS:+-j$JOBS} MAKEINFO=":"
+  make install MAKEINFO=":"
   hash -r
   rm -f $INSTALLROOT/lib/*.la
 popd
@@ -124,9 +137,24 @@ set version $PKGVERSION-@@PKGREVISION@$PKGHASH@@
 module-whatis "ALICE Modulefile for $PKGNAME $PKGVERSION-@@PKGREVISION@$PKGHASH@@"
 # Dependencies
 module load BASE/1.0
+# Load Toolchain module for the current platform. Fallback on this one
+regexp -- "^(.*)/.*\$" [module-info name] dummy mod_name
+if { "\$mod_name" == "GCC-Toolchain" } {
+  module load Toolchain/GCC-$PKGVERSION
+  if { [is-loaded Toolchain] } { break }
+  set base_path \$::env(BASEDIR)
+} else {
+  # Loading Toolchain: autodetect prefix
+  set base_path [string map "/etc/toolchain/modulefiles/ /" \$ModulesCurrentModulefile]
+  set base_path [string map "/Modules/modulefiles/ /" \$base_path]
+  regexp -- "^(.*)/.*/.*\$" \$base_path dummy base_path
+  set base_path \$base_path/Packages
+}
 # Our environment
-setenv GCC_TOOLCHAIN_ROOT \$::env(BASEDIR)/$PKGNAME/\$version
+setenv GCC_TOOLCHAIN_ROOT \$base_path/GCC-Toolchain/\$version
 prepend-path LD_LIBRARY_PATH \$::env(GCC_TOOLCHAIN_ROOT)/lib
+$([[ ${ARCHITECTURE:0:3} == osx ]] && echo "prepend-path DYLD_LIBRARY_PATH \$::env(GCC_TOOLCHAIN_ROOT)/lib")
 prepend-path LD_LIBRARY_PATH \$::env(GCC_TOOLCHAIN_ROOT)/lib64
+$([[ ${ARCHITECTURE:0:3} == osx ]] && echo "prepend-path DYLD_LIBRARY_PATH \$::env(GCC_TOOLCHAIN_ROOT)/lib64")
 prepend-path PATH \$::env(GCC_TOOLCHAIN_ROOT)/bin
 EoF

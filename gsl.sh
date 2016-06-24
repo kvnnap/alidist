@@ -5,10 +5,10 @@ tag: "release-1-16"
 build_requires:
   - autotools
 requires:
-  - "GCC-Toolchain:(?!osx|slc5)"
+  - "GCC-Toolchain:(?!osx)"
 prefer_system: (?!slc5)
 prefer_system_check: |
-  printf "#include \"gsl/gsl_version.h\"\n# if (GSL_MAJOR_VERSION * 100 + GSL_MINOR_VERSION < 116)\n#error \"Cannot use system's gsl.\"\n#endif\nint main(){}" | gcc  -I$(brew --prefix gsl)/include -xc++ - -o /dev/null
+  printf "#include \"gsl/gsl_version.h\"\n#define GSL_V GSL_MAJOR_VERSION * 100 + GSL_MINOR_VERSION\n# if (GSL_V < 116) || (GSL_V >= 200)\n#error \"Cannot use system's gsl. Notice we only support versions from 1.16 (included) and 2.00 (excluded)\"\n#endif\nint main(){}" | gcc  -I$(brew --prefix gsl)/include -xc++ - -o /dev/null
 ---
 #!/bin/bash -e
 rsync -a --exclude '**/.git' --delete $SOURCEDIR/ $BUILDDIR
@@ -38,5 +38,6 @@ module load BASE/1.0 ${GCC_TOOLCHAIN_ROOT:+GCC-Toolchain/$GCC_TOOLCHAIN_VERSION-
 # Our environment
 setenv GSL_BASEDIR \$::env(BASEDIR)/$PKGNAME/\$version
 prepend-path LD_LIBRARY_PATH \$::env(GSL_BASEDIR)/lib
+$([[ ${ARCHITECTURE:0:3} == osx ]] && echo "prepend-path DYLD_LIBRARY_PATH \$::env(GSL_BASEDIR)/lib")
 prepend-path PATH \$::env(GSL_BASEDIR)/bin
 EoF

@@ -5,7 +5,7 @@ source: https://github.com/alisw/LHAPDF
 env:
   LHAPATH: "$LHAPDF5_ROOT/share/lhapdf"
 requires:
- - "GCC-Toolchain:(?!osx|slc5)"
+ - "GCC-Toolchain:(?!osx)"
 ---
 #!/bin/bash -ex
 
@@ -16,12 +16,12 @@ rsync -a --exclude '**/.git' $SOURCEDIR/ ./
 make ${JOBS+-j $JOBS} all
 make install
 
-PDFSETS="cteq6l cteq6ll EPS09LOR_208"
+PDFSETS="cteq6l cteq6ll CT10 CT10nlo MSTW2008nnlo EPS09LOR_208 EPS09NLOR_208"
 pushd $INSTALLROOT/share/lhapdf
   $INSTALLROOT/bin/lhapdf-getdata $PDFSETS
   # Check if PDF sets were really installed
   for P in $PDFSETS; do
-    ls ${P}.*
+    ls ${P}*
   done
 popd
 
@@ -44,4 +44,5 @@ setenv LHAPDF5_ROOT \$::env(BASEDIR)/$PKGNAME/\$version
 setenv LHAPATH \$::env(LHAPDF5_ROOT)/share/lhapdf
 prepend-path PATH $::env(LHAPDF5_ROOT)/bin
 prepend-path LD_LIBRARY_PATH $::env(LHAPDF5_ROOT)/lib
+$([[ ${ARCHITECTURE:0:3} == osx ]] && echo "prepend-path DYLD_LIBRARY_PATH $::env(LHAPDF5_ROOT)/lib")
 EoF
