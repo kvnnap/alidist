@@ -7,6 +7,7 @@ requires:
 - boost
 - glog
 - restbed
+- jsonbox
 - DDS
 build_requires:
 - CMake
@@ -24,7 +25,8 @@ cmake "$SOURCEDIR"                               \
       -DMESOS_ROOT=${MESOS_ROOT}                 \
       ${BOOST_ROOT:+-DBOOST_ROOT=${BOOST_ROOT}}  \
       -DGLOG_ROOT=${GLOG_ROOT}					 \
-      -DRESTBED_ROOT=${RESTBED_ROOT}					 \
+      -DRESTBED_ROOT=${RESTBED_ROOT}			 \
+      -DJSONBOX_ROOT=${JSONBOX_ROOT}			 \
       -DDDS_ROOT=${DDS_ROOT}
 
 make ${JOBS:+-j $JOBS}
